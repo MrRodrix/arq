@@ -41,24 +41,85 @@ li $t2, 0               #temporario
 li $t3, 0               
 
 loop:
+    
+    
     lb $t1, buffer($t0) #t1 recebe buffer na posicao t0 
     beq $t1, 0, fim
     beq $t1, 10, end_verify #verificando se t0 e igual a "endfile"
-    blt $t1, 'a', next_step  #verificando 
-    bgt $t1, 'z', next_step
-    sub $t1, $t1, 32
-    sb $t1, buffer($t0)
-
+    #Casos especificos
+    beq $t1, -25, to_upper #ç -> Ç
+    beq $t1, -57, to_lower #Ç -> ç
+    
+    #Agudo ´
+    beq $t1, -31, to_upper #á -> Á
+    beq $t1, -63, to_lower #Á -> á
+    
+    beq $t1, -23, to_upper #é -> É
+    beq $t1, -55, to_lower #É -> é
+    
+    beq $t1, -19, to_upper #í -> Í
+    beq $t1, -51, to_lower #Í -> í
+    
+    beq $t1, -13, to_upper #ó -> Ó
+    beq $t1, -45, to_lower #Ó -> ó
+    
+    beq $t1, -6, to_upper #ú -> Ú
+    beq $t1, -38, to_lower #Ú -> u
+    #Circunflexo ^
+    
+    beq $t1, -30, to_upper #â -> Â
+    beq $t1, -62, to_lower #Â -> â
+    
+    beq $t1, -22, to_upper #ê -> Ê
+    beq $t1, -54, to_lower #Ê -> ê
+    
+    beq $t1, -18, to_upper #î -> Î
+    beq $t1, -50, to_lower #Î -> î 
+    
+    beq $t1, -12, to_upper #ô -> Ô
+    beq $t1, -44, to_lower #Ô -> ô
+    
+    beq $t1, -5, to_upper #û -> Û
+    beq $t1, -37, to_lower #Û -> û
+    
+    #Til ~ 
+    beq $t1, -29, to_upper #â -> Ã
+    beq $t1, -61, to_lower #Â -> ã
+    
+    beq $t1, -11, to_upper #ô -> Õ
+    beq $t1, -43, to_lower #Ô -> õ
+    
+    
+    
+    # A - Z
+    blt $t1, 'A', next_step #se for menos que A 
+    blt $t1, '[', to_lower #se for Z até A deixa minusculo
+    # a - z
+    blt $t1, 'a', next_step  #se for simbolo qualquer de [ até '
+    blt $t1, '{', to_upper   #se for entre a e z deixa maiusculo
+    
+    
+    
 next_step: 
     addi $t0, $t0, 1
     j loop
     
+to_upper:
+    sub $t1, $t1, 32 # deixa maiusculo
+    sb $t1, buffer($t0)
+    j next_step      # proxima letra
+
+to_lower:
+    add $t1, $t1, 32 # deixa minusculo
+    sb $t1, buffer($t0)
+    j next_step      # proxima letra
+
 end_verify:
     addi $t0, $t0, 1
     move $t2, $t0
     
     lb $t4, buffer($t2)                #carregando a letra em t4
-    bne $t4,'e',loop                   #verificando se a letra Ã© diferente de 'e'
+    bne $t4,'e',loop                   #verificando se a letra é diferente de 'e'
     addi $t2, $t2, 1                   # t2++
     lb $t4, buffer($t2)
     bne $t4, 'n',loop
