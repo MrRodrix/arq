@@ -3,7 +3,7 @@
 arquivo_entrada:	.asciiz "teste.txt"
 arquivo_saida:		.asciiz "resposta.txt"
 buffer:			    .space 512
-#EOL:                .asciiz '' #utilizaremos EOL (end of line) para identificar o fim de cada palavra
+
 
 .text
 
@@ -33,7 +33,8 @@ syscall
 # t2 e um indice auxiliar para nao mudar o t0 
 # t2 vai ser usado no end_verify
 # t3 conta o tamanho de cada palavra
-# t4 
+# t4 recebe letra para trocar case
+# t5 e t6 são as letras a ser trocadas
 
 # Switch case 
 li $t0, 0               #salvando 0 no nosso indice ($t0)
@@ -41,65 +42,95 @@ li $t2, 0               #temporario
 li $t3, 0               
 
 loop:
-    
-    
     lb $t1, buffer($t0) #t1 recebe buffer na posicao t0 
     beq $t1, 0, fim
     beq $t1, 10, end_verify #verificando se t0 e igual a "endfile"
     #Casos especificos
-    beq $t1, -25, to_upper #ç -> Ç
-    beq $t1, -57, to_lower #Ç -> ç
+    beq $t1, -25, to_upper #? -> ?
+    beq $t1, -57, to_lower #? -> ?
     
-    #Agudo ´
-    beq $t1, -31, to_upper #á -> Á
-    beq $t1, -63, to_lower #Á -> á
+    #Agudo ?
+    beq $t1, -31, to_upper #? -> ?
+    beq $t1, -63, to_lower #? -> ?
     
-    beq $t1, -23, to_upper #é -> É
-    beq $t1, -55, to_lower #É -> é
+    beq $t1, -23, to_upper #? -> ?
+    beq $t1, -55, to_lower #? -> ?
     
-    beq $t1, -19, to_upper #í -> Í
-    beq $t1, -51, to_lower #Í -> í
+    beq $t1, -19, to_upper #? -> ?
+    beq $t1, -51, to_lower #? -> ?
     
-    beq $t1, -13, to_upper #ó -> Ó
-    beq $t1, -45, to_lower #Ó -> ó
+    beq $t1, -13, to_upper #? -> ?
+    beq $t1, -45, to_lower #? -> ?
     
-    beq $t1, -6, to_upper #ú -> Ú
-    beq $t1, -38, to_lower #Ú -> u
+    beq $t1, -6, to_upper #? -> ?
+    beq $t1, -38, to_lower #? -> u
     #Circunflexo ^
     
-    beq $t1, -30, to_upper #â -> Â
-    beq $t1, -62, to_lower #Â -> â
+    beq $t1, -30, to_upper #? -> ?
+    beq $t1, -62, to_lower #? -> ?
     
-    beq $t1, -22, to_upper #ê -> Ê
-    beq $t1, -54, to_lower #Ê -> ê
+    beq $t1, -22, to_upper #? -> ?
+    beq $t1, -54, to_lower #? -> ?
     
-    beq $t1, -18, to_upper #î -> Î
-    beq $t1, -50, to_lower #Î -> î 
+    beq $t1, -18, to_upper #? -> ?
+    beq $t1, -50, to_lower #? -> ? 
     
-    beq $t1, -12, to_upper #ô -> Ô
-    beq $t1, -44, to_lower #Ô -> ô
+    beq $t1, -12, to_upper #? -> ?
+    beq $t1, -44, to_lower #? -> ?
     
-    beq $t1, -5, to_upper #û -> Û
-    beq $t1, -37, to_lower #Û -> û
+    beq $t1, -5, to_upper #? -> ?
+    beq $t1, -37, to_lower #? -> ?
     
     #Til ~ 
-    beq $t1, -29, to_upper #â -> Ã
-    beq $t1, -61, to_lower #Â -> ã
+    beq $t1, -29, to_upper #? -> ?
+    beq $t1, -61, to_lower #? -> ?
     
-    beq $t1, -11, to_upper #ô -> Õ
-    beq $t1, -43, to_lower #Ô -> õ
+    beq $t1, -11, to_upper #? -> ?
+    beq $t1, -43, to_lower #? -> ?
     
     
     
     # A - Z
     blt $t1, 'A', next_step #se for menos que A 
-    blt $t1, '[', to_lower #se for Z até A deixa minusculo
+    blt $t1, '[', to_lower #se for Z at? A deixa minusculo
     # a - z
-    blt $t1, 'a', next_step  #se for simbolo qualquer de [ até '
+    blt $t1, 'a', next_step  #se for simbolo qualquer de [ at? '
     blt $t1, '{', to_upper   #se for entre a e z deixa maiusculo
     
+
+reverse:
+    jal clear_t0              #salvando 0 no nosso indice ($t0)
+
+reverse_str:
+    li $v1, 0                 # zera o retorno da funcao
+    jal len                   # chama len e armazena em v1 (que armazena o len da str)
+    sub $t3, $t0, $v1 #armazena o primeiro índice da string em t3
+    subi $s0, $t0, 1 #armazena o último índice da string em s0
+    jal swap #reverte a string da linha atual
+    j end_verify_reverse #caso a próxima linha seja "endfile" acabe o processo, se não, repita o processo
     
-    
+len:
+    lb $t1, buffer($t0) #armazena o caractere atual em t1
+    beq $t1, 10, jra #se t1 for quebra de linha ou fim da string, retorne
+    beq $t1, 0, jra
+    addi $v1,$v1, 1 #adiciona um na contagem de len
+    addi $t0,$t0, 1 #avança para o próximo caractere da string
+    j len #loop
+
+swap:
+    bge $t3, $s0, jra #se t3>=s0, então acabou a operação de swap, segue o código
+    lb $t5, buffer($t3) #guarda o caractere de t3 em t5
+    lb $t6, buffer($s0) #guarda o caractere de s0 em t6
+    sb $t5, buffer($s0) #primeira parte da troca, coloca o caractere de t5 na string na posicao onde estava o caractere de t6
+    sb $t6, buffer($t3) #segunda parte da troca, coloca o caractere de t6 na string na posicao onde estava o caractere de t5
+    addi $t3, $t3,1 # avança para o próximo caractere da string(da esquerda pra direita)
+    subi $s0, $s0,1 # avança para o próximo caractere da string(da direita pra esquerda)
+    j swap # loop
+
+
+jra:
+    jr $ra
+
 next_step: 
     addi $t0, $t0, 1
     j loop
@@ -119,7 +150,7 @@ end_verify:
     move $t2, $t0
     
     lb $t4, buffer($t2)                #carregando a letra em t4
-    bne $t4,'e',loop                   #verificando se a letra é diferente de 'e'
+    bne $t4,'e',loop                   #verificando se a letra ? diferente de 'e'
     addi $t2, $t2, 1                   # t2++
     lb $t4, buffer($t2)
     bne $t4, 'n',loop
@@ -140,17 +171,51 @@ end_verify:
     bne $t4, 'e',loop
     addi $t2, $t2, 1
     lb $t4, buffer($t2)
+    beq $t4, 0, reverse
+    beq $t4, 10, reverse
+    j loop
+    
+    #checa se eh endfile
+    
+end_verify_reverse:
+    addi $t0, $t0, 1
+    move $t2, $t0
+    
+    lb $t4, buffer($t2)                #carregando a letra em t4
+    bne $t4,'e',reverse_str                   #verificando se a letra ? diferente de 'e'
+    addi $t2, $t2, 1                   # t2++
+    lb $t4, buffer($t2)
+    bne $t4, 'n',reverse_str
+    addi $t2, $t2, 1
+    lb $t4, buffer($t2)                
+    bne $t4, 'd',reverse_str
+    addi $t2, $t2, 1
+    lb $t4, buffer($t2)
+    bne $t4, 'f',reverse_str
+    addi $t2, $t2, 1
+    lb $t4, buffer($t2)
+    bne $t4, 'i',reverse_str
+    addi $t2, $t2, 1
+    lb $t4, buffer($t2)
+    bne $t4, 'l',reverse_str
+    addi $t2, $t2, 1
+    lb $t4, buffer($t2)
+    bne $t4, 'e',reverse_str
+    addi $t2, $t2, 1
+    lb $t4, buffer($t2)
     beq $t4, 0, fim
     beq $t4, 10, fim
-    j loop
+    j reverse_str
     
     #checa se eh endfile
 
 clear_i:
     li $t3, 0 #zerando a contagem
+    jr $ra
 
-
-
+clear_t0:
+    li $t0, 0 #zerando o t0
+    jr $ra
 
 fim: 
 li $v1, 1                   #salvando 1 em $v1
@@ -159,7 +224,8 @@ li $v1, 1                   #salvando 1 em $v1
 li $v0, 4          
 la $a0, buffer
 syscall
-
+li $v0, 10
+syscall
 #exemplo file:
 #arquitetura
 #3Home
